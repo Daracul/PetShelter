@@ -54,6 +54,9 @@ public class CatalogActivity extends AppCompatActivity {
             }
         });
         Log.d("myLogs", PetDbHelper.SQL_CREATE_ENTRIES);
+        petListView = (ListView)findViewById(R.id.list_view_pet);
+        View emptyView = findViewById(R.id.empty_view);
+        petListView.setEmptyView(emptyView);
         displayDatabaseInfo();
 
     }
@@ -117,49 +120,14 @@ public class CatalogActivity extends AppCompatActivity {
 
 
     private void displayDatabaseInfo() {
-        // To access our database, we instantiate our subclass of SQLiteOpenHelper
-        // and pass the context, which is the current activity.
 
-
-        // Create and/or open a database to read from it
-//        SQLiteDatabase db = petDbHelper.getReadableDatabase();
-
-
-//        Cursor cursor = db.query(PetEntry.TABLE_NAME,null,null,null,null,null,null);
         Cursor cursor = getContentResolver().query(PetEntry.CONTENT_URI, null, null, null, null);
 
-        try {
-            // Display the number of rows in the Cursor (which reflects the number of rows in the
-            // pets table in the database).
-            TextView displayView = (TextView) findViewById(R.id.text_view_pet);
-            displayView.setText("The pets table containes " + cursor.getCount() +" pets. \n \n");
 
-            displayView.append(PetEntry._ID + " - "+ PetEntry.COLUMN_PET_NAME+ " - "
-                    + PetEntry.COLUMN_PET_BREED+ " - "+ PetEntry.COLUMN_PET_GENDER
-                    + " - "+ PetEntry.COLUMN_PET_WEIGHT+"\n");
-
-            int idColumnIndex = cursor.getColumnIndex(PetEntry._ID);
-            int nameColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_NAME);
-            int breedColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_BREED);
-            int genderColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_GENDER);
-            int weightColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_WEIGHT);
-
-            while (cursor.moveToNext()){
-                int currentId = cursor.getInt(idColumnIndex);
-                String currentName = cursor.getString(nameColumnIndex);
-                String currentBreed = cursor.getString(breedColumnIndex);
-                int currentGender = cursor.getInt(genderColumnIndex);
-                int currentWeight = cursor.getInt(weightColumnIndex);
-
-                displayView.append("\n" + currentId +" - " + currentName +" - " + currentBreed +" - " + currentGender +" - " + currentWeight);
+        petCursorAdapter = new PetCursorAdapter(this, cursor);
+        petListView.setAdapter(petCursorAdapter);
 
 
 
-            }
-        } finally {
-            // Always close the cursor when you're done reading from it. This releases all its
-            // resources and makes it invalid.
-            cursor.close();
-        }
     }
 }
