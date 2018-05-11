@@ -15,9 +15,13 @@
  */
 package com.example.android.pets;
 
+import android.app.LoaderManager;
 import android.content.ContentValues;
+import android.content.CursorLoader;
 import android.content.Intent;
+import android.content.Loader;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
@@ -25,6 +29,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -34,7 +39,11 @@ import com.example.android.pets.data.PetDbHelper;
 /**
  * Displays list of pets that were entered and stored in the app.
  */
-public class CatalogActivity extends AppCompatActivity {
+public class CatalogActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor>{
+
+    private static final String LOG_TAG = CatalogActivity.class.getSimpleName();
+
+    private static final int PET_LOADER = 1;
 
     private ListView petListView;
     private PetCursorAdapter petCursorAdapter;
@@ -57,14 +66,26 @@ public class CatalogActivity extends AppCompatActivity {
         petListView = (ListView)findViewById(R.id.list_view_pet);
         View emptyView = findViewById(R.id.empty_view);
         petListView.setEmptyView(emptyView);
-        displayDatabaseInfo();
+        petCursorAdapter = new PetCursorAdapter(this, null);
+        petListView.setAdapter(petCursorAdapter);
+        petListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long Id) {
+                Uri currentPetUri = Uri.withAppendedPath(PetEntry.CONTENT_URI, String.valueOf(Id));
+                Log.d(LOG_TAG, "TEST: "+ currentPetUri.toString());
+                Intent petEditIntent = new Intent(CatalogActivity.this, EditorActivity.class);
+                petEditIntent.setData(currentPetUri);
+                startActivity(petEditIntent);
+            }
+        });
+        getLoaderManager().initLoader(PET_LOADER, null, this);
 
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        displayDatabaseInfo();
+
     }
 
     private void insertData() {
@@ -104,12 +125,10 @@ public class CatalogActivity extends AppCompatActivity {
             // Respond to a click on the "Insert dummy data" menu option
             case R.id.action_insert_dummy_data:
                 insertData();
-                displayDatabaseInfo();
                 return true;
             // Respond to a click on the "Delete all entries" menu option
             case R.id.action_delete_all_entries:
                 deleteData();
-                displayDatabaseInfo();
                 // Do nothing for now
                 return true;
         }
@@ -119,15 +138,24 @@ public class CatalogActivity extends AppCompatActivity {
 
 
 
-    private void displayDatabaseInfo() {
 
-        Cursor cursor = getContentResolver().query(PetEntry.CONTENT_URI, null, null, null, null);
+    @Override
+    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
 
+        String[] projectiction = new String[]{PetEntry._ID, PetEntry.COLUMN_PET_NAME, PetEntry.COLUMN_PET_BREED};
 
-        petCursorAdapter = new PetCursorAdapter(this, cursor);
-        petListView.setAdapter(petCursorAdapter);
+        return new CursorLoader(this, PetEntry.CONTENT_URI, projectiction, null, null, null);
+    }
 
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+        petCursorAdapter.swapCursor(cursor);
 
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        petCursorAdapter.swapCursor(null);
 
     }
 }
